@@ -271,7 +271,7 @@ header{
 
 <script type="module">
 import { initializeApp }  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, query, orderBy, limit, limitToLast, onSnapshot }
+import { getFirestore, collection, getDocs, query }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -304,14 +304,14 @@ function mk(id,type,data,opts){if(CH[id])CH[id].destroy();CH[id]=new Chart(docum
 function sv(id,v){const e=document.getElementById(id);if(e)e.textContent=(v!=null)?v:'—';}
 function bd(id,txt,cls){const e=document.getElementById(id);if(!e)return;e.textContent=txt;e.className='badge '+cls;}
 
-function startLive(){
-  const q=query(collection(db,'readings'),orderBy('__name__'),limitToLast(300));
-  onSnapshot(q, snap=>{
-    if(snap.empty){sv('ltxt','NO DATA');document.getElementById('ldot').classList.add('off');show();return;}
+async function startLive(){
+  try{
+    const snap = await getDocs(query(collection(db,'readings')));
+    if(snap.empty){ sv('ltxt','NO DATA'); document.getElementById('ldot').classList.add('off'); show(); return; }
     const all=[];
     snap.forEach(d=>all.push({id:d.id,...d.data()}));
     render(all);
-  }, e=>{
+  } catch(e){
     console.error(e);
     document.getElementById('loading').innerHTML=`
       <div style="text-align:center;padding:2rem;font-family:'Orbitron',monospace">
@@ -322,7 +322,7 @@ function startLive(){
           OR OPEN F12 FOR DETAILS
         </p>
       </div>`;
-  });
+  }
 }
 
 function render(all){
@@ -449,6 +449,7 @@ function show(){
 }
 
 startLive();
+setInterval(startLive, 5000);
 </script>
 </body>
 </html>
