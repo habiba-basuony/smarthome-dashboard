@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Smart Home · Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{
+  --bg:#04070f; --card:#0a1020; --card2:#0d1628;
+  --b1:rgba(0,212,255,.13); --b2:rgba(0,212,255,.35);
+  --cyan:#00d4ff; --green:#00ff88; --pink:#ff2d6b;
+  --amber:#ffb700; --purple:#b06ef3;
+  --text:#dff0ff; --muted:#3d5570;
+  --hd:'Orbitron',monospace; --bd:'Rajdhani',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:var(--bd);font-size:16px;
+  min-height:100vh;overflow-x:hidden;
+}
+body::before{
+  content:'';position:fixed;inset:0;
+  background-image:
+    linear-gradient(rgba(0,212,255,.018) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,212,255,.018) 1px,transparent 1px);
+  background-size:48px 48px;
+  pointer-events:none;z-index:0;
+}
+body::after{
+  content:'';position:fixed;inset:0;
+  background:
+    radial-gradient(ellipse 800px 500px at -5% -5%,  rgba(0,212,255,.07) 0%,transparent 55%),
+    radial-gradient(ellipse 600px 500px at 105% 105%,rgba(0,255,136,.06) 0%,transparent 55%),
+    radial-gradient(ellipse 500px 400px at 50%  50%, rgba(176,110,243,.04) 0%,transparent 55%);
+  pointer-events:none;z-index:0;
+}
+.page{position:relative;z-index:1;max-width:1320px;margin:0 auto;padding:2rem 1.5rem;}
+
+/* Loading */
+#loading{
+  position:fixed;inset:0;z-index:999;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.5rem;
+}
+.ld-ring{width:60px;height:60px;position:relative;}
+.ld-ring::before,.ld-ring::after{
+  content:'';position:absolute;inset:0;border-radius:50%;border:2px solid transparent;
+}
+.ld-ring::before{border-top-color:var(--cyan);animation:spin .9s linear infinite;}
+.ld-ring::after{border-bottom-color:var(--green);animation:spin 1.4s linear infinite reverse;inset:6px;}
+.ld-t{font-family:var(--hd);font-size:.9rem;color:var(--cyan);letter-spacing:.3em;animation:blink 1.2s ease infinite;}
+.ld-s{font-size:.72rem;color:var(--muted);letter-spacing:.15em;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* Header */
+header{
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;
+  margin-bottom:2.5rem;padding-bottom:1.5rem;
+  border-bottom:1px solid var(--b1);
+  animation:fadeDown .6s ease both;
+}
+.brand{display:flex;align-items:center;gap:1rem;}
+.brand-icon{
+  width:52px;height:52px;border-radius:14px;font-size:24px;
+  background:linear-gradient(135deg,rgba(0,212,255,.18),rgba(0,255,136,.1));
+  border:1px solid var(--b2);
+  display:flex;align-items:center;justify-content:center;
+  animation:iconGlow 3s ease-in-out infinite;
+}
+.brand h1{
+  font-family:var(--hd);font-size:1.35rem;font-weight:900;letter-spacing:.07em;
+  background:linear-gradient(90deg,var(--cyan) 0%,var(--green) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.brand p{font-size:.7rem;color:var(--muted);letter-spacing:.12em;margin-top:2px;}
+.pill{
+  display:flex;align-items:center;gap:8px;
+  background:rgba(0,255,136,.05);border:1px solid rgba(0,255,136,.2);
+  border-radius:100px;padding:7px 16px;
+  font-family:var(--hd);font-size:.62rem;color:var(--green);letter-spacing:.14em;
+}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green);animation:ping 1.8s ease infinite;}
+.dot.off{background:var(--pink);box-shadow:0 0 8px var(--pink);animation:none;}
+
+/* Metrics */
+.metrics{display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;margin-bottom:2rem;}
+.metric{
+  background:var(--card);border:1px solid var(--b1);
+  border-radius:18px;padding:1.3rem 1.2rem;
+  position:relative;overflow:hidden;
+  transition:border-color .3s,transform .25s,box-shadow .25s;
+  animation:fadeUp .5s ease both;
+}
+.metric:hover{
+  border-color:var(--mc,var(--b2));
+  transform:translateY(-6px);
+  box-shadow:0 16px 40px rgba(0,0,0,.5);
+}
+.metric::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--mc,var(--cyan)),transparent);
+}
+.metric::after{
+  content:'';position:absolute;bottom:-60px;right:-60px;
+  width:130px;height:130px;border-radius:50%;
+  background:radial-gradient(circle,var(--mc,var(--cyan)) 0%,transparent 70%);
+  opacity:.07;pointer-events:none;
+}
+.mi{font-size:1.5rem;margin-bottom:.55rem;}
+.ml{font-size:.62rem;color:var(--muted);letter-spacing:.16em;text-transform:uppercase;font-weight:500;}
+.mv{font-family:var(--hd);font-size:1.9rem;font-weight:700;line-height:1;color:var(--mc,var(--cyan));text-shadow:0 0 24px var(--mc,var(--cyan));margin:5px 0 2px;}
+.mu{font-size:.8rem;color:var(--muted);}
+.badge{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:.58rem;font-family:var(--hd);
+  padding:3px 10px;border-radius:100px;margin-top:8px;
+  letter-spacing:.08em;font-weight:700;
+}
+.ok  {background:rgba(0,255,136,.08);color:var(--green);border:1px solid rgba(0,255,136,.22);}
+.warn{background:rgba(255,183,0,.08);color:var(--amber);border:1px solid rgba(255,183,0,.22);}
+.err {background:rgba(255,45,107,.08);color:var(--pink);border:1px solid rgba(255,45,107,.22);animation:flash 1.1s ease infinite;}
+
+/* Charts */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem;}
+.card{
+  background:var(--card);border:1px solid var(--b1);
+  border-radius:20px;padding:1.6rem;
+  position:relative;overflow:hidden;
+  transition:border-color .3s,box-shadow .3s;
+  animation:fadeUp .6s ease both;
+}
+.card:hover{border-color:rgba(0,212,255,.3);}
+.card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent 0%,var(--cc,var(--cyan)) 50%,transparent 100%);
+  opacity:.6;
+}
+.card.wide{grid-column:1/-1;}
+.ch{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.3rem;flex-wrap:wrap;gap:.5rem;}
+.ct{display:flex;align-items:center;gap:10px;font-family:var(--hd);font-size:.67rem;font-weight:700;color:var(--cc,var(--cyan));letter-spacing:.15em;text-transform:uppercase;}
+.ctb{width:3px;height:16px;border-radius:2px;background:var(--cc,var(--cyan));box-shadow:0 0 10px var(--cc,var(--cyan));}
+.cc-badge{font-family:var(--hd);font-size:.58rem;color:var(--muted);background:rgba(255,255,255,.03);border:1px solid var(--b1);border-radius:100px;padding:3px 10px;letter-spacing:.08em;}
+.cw{position:relative;width:100%;}
+
+.footer{text-align:center;margin-top:2.5rem;font-family:var(--hd);font-size:.6rem;color:var(--muted);letter-spacing:.18em;border-top:1px solid var(--b1);padding-top:1.5rem;}
+.footer span{color:var(--cyan);}
+
+/* Animations */
+@keyframes spin    {to{transform:rotate(360deg)}}
+@keyframes ping    {0%,100%{opacity:1}50%{opacity:.25}}
+@keyframes iconGlow{0%,100%{box-shadow:0 0 20px rgba(0,212,255,.12)}50%{box-shadow:0 0 40px rgba(0,212,255,.35)}}
+@keyframes flash   {0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes fadeUp  {from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+@keyframes fadeDown{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:none}}
+
+.metric:nth-child(1){animation-delay:.05s}
+.metric:nth-child(2){animation-delay:.1s}
+.metric:nth-child(3){animation-delay:.15s}
+.metric:nth-child(4){animation-delay:.2s}
+.metric:nth-child(5){animation-delay:.25s}
+
+@media(max-width:960px){.metrics{grid-template-columns:repeat(3,1fr)}.grid{grid-template-columns:1fr}.card.wide{grid-column:1}}
+@media(max-width:560px){.metrics{grid-template-columns:1fr 1fr}.brand h1{font-size:1rem}}
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="ld-ring"></div>
+  <p class="ld-t">CONNECTING</p>
+  <p class="ld-s">FETCHING SENSOR DATA FROM FIRESTORE</p>
+</div>
+
+<div class="page" id="app" style="display:none">
+
+  <header>
+    <div class="brand">
+      <div class="brand-icon">🏠</div>
+      <div>
+        <h1>SMART HOME MONITOR</h1>
+        <p>BENHA UNIVERSITY · CS433 IoT · DATA ANALYSIS DASHBOARD</p>
+      </div>
+    </div>
+    <div class="pill">
+      <div class="dot" id="ldot"></div>
+      <span id="ltxt">CONNECTING…</span>
+    </div>
+  </header>
+
+  <div class="metrics">
+    <div class="metric" style="--mc:var(--pink)">
+      <div class="mi">🌡️</div><div class="ml">Temperature</div>
+      <div class="mv"><span id="mt">—</span><span class="mu"> °C</span></div>
+      <span class="badge ok" id="bt">● NORMAL</span>
+    </div>
+    <div class="metric" style="--mc:var(--cyan)">
+      <div class="mi">💧</div><div class="ml">Humidity</div>
+      <div class="mv"><span id="mh">—</span><span class="mu"> %</span></div>
+      <span class="badge ok" id="bh">● NORMAL</span>
+    </div>
+    <div class="metric" style="--mc:var(--amber)">
+      <div class="mi">💨</div><div class="ml">Gas Level</div>
+      <div class="mv"><span id="mg">—</span></div>
+      <span class="badge ok" id="bg">● SAFE</span>
+    </div>
+    <div class="metric" style="--mc:var(--green)">
+      <div class="mi">🚶</div><div class="ml">Motion</div>
+      <div class="mv" style="font-size:1rem;padding-top:8px" id="mm">—</div>
+      <span class="badge ok" id="bm">● CLEAR</span>
+    </div>
+    <div class="metric" style="--mc:var(--purple)">
+      <div class="mi">💡</div><div class="ml">Light</div>
+      <div class="mv" style="font-size:1rem;padding-top:8px" id="ml2">—</div>
+      <span class="badge ok" id="bl">● GOOD</span>
+    </div>
+  </div>
+
+  <div class="grid">
+
+    <div class="card wide" style="--cc:var(--pink)">
+      <div class="ch">
+        <div class="ct"><div class="ctb"></div>Temperature &amp; Humidity over Time</div>
+        <span class="cc-badge" id="n1">—</span>
+      </div>
+      <div class="cw" style="height:260px"><canvas id="c1"></canvas></div>
+    </div>
+
+    <div class="card wide" style="--cc:var(--amber)">
+      <div class="ch">
+        <div class="ct"><div class="ctb" style="background:var(--amber);box-shadow:0 0 10px var(--amber)"></div>Gas Level Timeline</div>
+        <span class="cc-badge" id="n2">—</span>
+      </div>
+      <div class="cw" style="height:230px"><canvas id="c2"></canvas></div>
+    </div>
+
+    <div class="card" style="--cc:var(--green)">
+      <div class="ch">
+        <div class="ct"><div class="ctb" style="background:var(--green);box-shadow:0 0 10px var(--green)"></div>Motion by Hour</div>
+        <span class="cc-badge" id="n3">—</span>
+      </div>
+      <div class="cw" style="height:230px"><canvas id="c3"></canvas></div>
+    </div>
+
+    <div class="card" style="--cc:var(--cyan)">
+      <div class="ch">
+        <div class="ct"><div class="ctb"></div>Alert Summary</div>
+        <span class="cc-badge" id="n4">—</span>
+      </div>
+      <div class="cw" style="height:230px"><canvas id="c4"></canvas></div>
+    </div>
+
+    <div class="card wide" style="--cc:var(--purple)">
+      <div class="ch">
+        <div class="ct"><div class="ctb" style="background:var(--purple);box-shadow:0 0 10px var(--purple)"></div>Temperature vs Humidity — Correlation</div>
+        <span class="cc-badge" id="n5">—</span>
+      </div>
+      <div class="cw" style="height:290px"><canvas id="c5"></canvas></div>
+    </div>
+
+  </div>
+
+  <p class="footer">
+    Last updated: <span id="ft">—</span> &nbsp;·&nbsp;
+    Auto-refresh every 30s &nbsp;·&nbsp;
+    Smart Home IoT &nbsp;·&nbsp; Benha University CS433
+  </p>
+</div>
+
+<script type="module">
+import { initializeApp }  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, query, orderBy, limit, limitToLast, onSnapshot }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey:            "AIzaSyC2RANCqvymCBaGSMRQQHtuKymes5LMT1Q",
+  authDomain:        "smart-home-33f3b.firebaseapp.com",
+  databaseURL:       "https://smart-home-33f3b-default-rtdb.firebaseio.com",
+  projectId:         "smart-home-33f3b",
+  storageBucket:     "smart-home-33f3b.firebasestorage.app",
+  messagingSenderId: "476003022174",
+  appId:             "1:476003022174:web:9f347581af5a0abbfdcbcf",
+  measurementId:     "G-B276KDGNLG"
+};
+
+const db = getFirestore(initializeApp(firebaseConfig));
+
+const GRID='rgba(0,212,255,0.05)', TICK='#3d5570';
+const base={
+  responsive:true,maintainAspectRatio:false,
+  animation:{duration:800,easing:'easeInOutQuart'},
+  plugins:{legend:{display:false}},
+  scales:{
+    x:{ticks:{color:TICK,font:{size:10},maxTicksLimit:10},grid:{color:GRID}},
+    y:{ticks:{color:TICK,font:{size:11}},grid:{color:GRID}}
+  }
+};
+const LG={display:true,labels:{color:'#6080a0',font:{size:11,family:"'Rajdhani',sans-serif"},boxWidth:14,padding:20}};
+
+let CH={};
+function mk(id,type,data,opts){if(CH[id])CH[id].destroy();CH[id]=new Chart(document.getElementById(id),{type,data,options:opts});}
+function sv(id,v){const e=document.getElementById(id);if(e)e.textContent=(v!=null)?v:'—';}
+function bd(id,txt,cls){const e=document.getElementById(id);if(!e)return;e.textContent=txt;e.className='badge '+cls;}
+
+function startLive(){
+  const q=query(collection(db,'readings'),orderBy('__name__'),limitToLast(300));
+  onSnapshot(q, snap=>{
+    if(snap.empty){sv('ltxt','NO DATA');document.getElementById('ldot').classList.add('off');show();return;}
+    const all=[];
+    snap.forEach(d=>all.push({id:d.id,...d.data()}));
+    render(all);
+  }, e=>{
+    console.error(e);
+    document.getElementById('loading').innerHTML=`
+      <div style="text-align:center;padding:2rem;font-family:'Orbitron',monospace">
+        <p style="color:#ff2d6b;font-size:1rem;margin-bottom:1.2rem">● CONNECTION FAILED</p>
+        <p style="color:#3d5570;font-size:.7rem;line-height:2.2;letter-spacing:.08em">
+          FIREBASE CONSOLE → FIRESTORE → RULES<br>
+          SET: <code style="color:#00d4ff;font-family:monospace">allow read: if true;</code><br><br>
+          OR OPEN F12 FOR DETAILS
+        </p>
+      </div>`;
+  });
+}
+
+function render(all){
+  try{
+    // Remove warmup only if enough data exists
+    const docs=all.length>120?all.slice(60):all;
+    const N=docs.length;
+    const L=docs[N-1];
+
+    // Metric cards
+    sv('mt',  L.temperature?.toFixed(1));
+    sv('mh',  L.humidity?.toFixed(0));
+    sv('mg',  L.gas);
+    sv('mm',  L.motion?'DETECTED':'CLEAR');
+    sv('ml2', L.light?'GOOD':'LOW');
+    bd('bt',  L.high_temp ?'⚠ HIGH'  :'● NORMAL', L.high_temp ?'err':'ok');
+    bd('bh',  '● NORMAL','ok');
+    bd('bg',  L.gas_alert ?'⚠ ALERT!':'● SAFE',   L.gas_alert ?'err':'ok');
+    bd('bm',  L.motion    ?'● ACTIVE':'● CLEAR',   L.motion    ?'warn':'ok');
+    bd('bl',  !L.light    ?'⚠ LOW'   :'● GOOD',  !L.light     ?'warn':'ok');
+
+    // Chart 1: Temp & Humidity — every reading (max 200)
+    const th=docs.slice(-200);
+    const step1=Math.ceil(th.length/10);
+    sv('n1',th.length+' readings');
+    mk('c1','line',{
+      labels:th.map((_,i)=>i%step1===0?`#${i+1}`:''),
+      datasets:[
+        {label:'Temp (°C)',data:th.map(d=>+(d.temperature||0).toFixed(1)),
+         borderColor:'#ff2d6b',
+         backgroundColor:ctx=>{const g=ctx.chart.ctx.createLinearGradient(0,0,0,260);g.addColorStop(0,'rgba(255,45,107,.35)');g.addColorStop(1,'rgba(255,45,107,0)');return g;},
+         borderWidth:2,pointRadius:0,tension:0.4,fill:true},
+        {label:'Humidity (%)',data:th.map(d=>+(d.humidity||0).toFixed(1)),
+         borderColor:'#00d4ff',backgroundColor:'transparent',
+         borderWidth:2,pointRadius:0,tension:0.4,borderDash:[6,3]}
+      ]
+    },{...base,plugins:{legend:LG}});
+
+    // Chart 2: Gas — every reading (max 200)
+    const gs=docs.slice(-200);
+    const step2=Math.ceil(gs.length/10);
+    sv('n2',gs.length+' readings');
+    mk('c2','bar',{
+      labels:gs.map((_,i)=>i%step2===0?`#${i+1}`:''),
+      datasets:[
+        {label:'Gas',data:gs.map(d=>d.gas||0),
+         backgroundColor:gs.map(d=>d.gas_alert?'rgba(255,45,107,.85)':'rgba(255,183,0,.55)'),
+         borderRadius:2,borderSkipped:false},
+        {label:'Threshold (15)',data:Array(gs.length).fill(15),
+         type:'line',borderColor:'rgba(255,45,107,.7)',
+         borderDash:[8,4],borderWidth:1.5,pointRadius:0,fill:false}
+      ]
+    },{...base,plugins:{legend:LG},scales:{x:{ticks:{color:TICK,font:{size:10},maxTicksLimit:10},grid:{color:GRID}},y:{ticks:{color:TICK,font:{size:11}},grid:{color:GRID},beginAtZero:true}}});
+
+    // Chart 3: Motion by hour (timestamp = seconds since boot)
+    const mhArr=Array(24).fill(0);
+    let mtot=0;
+    docs.forEach(d=>{
+      if(d.motion){
+        mtot++;
+        const h=Math.floor((d.timestamp||0)/3600)%24;
+        mhArr[h]++;
+      }
+    });
+    sv('n3',mtot+' events');
+    const maxM=Math.max(...mhArr,1);
+    mk('c3','bar',{
+      labels:Array.from({length:24},(_,i)=>`${String(i).padStart(2,'0')}h`),
+      datasets:[{
+        label:'Motion events',data:mhArr,
+        backgroundColor:mhArr.map(v=>{const a=v===0?.07:.2+.7*(v/maxM);return `rgba(0,255,136,${a.toFixed(2)})`;},),
+        borderRadius:5,borderSkipped:false
+      }]
+    },{...base,scales:{x:{ticks:{color:TICK,font:{size:9},maxRotation:0},grid:{color:GRID}},y:{ticks:{color:TICK},grid:{color:GRID}}}});
+
+    // Chart 4: Alert summary
+    const ac={
+      'Gas Alert':docs.filter(d=>d.gas_alert).length,
+      'Low Light':docs.filter(d=>d.low_light).length,
+      'High Temp':docs.filter(d=>d.high_temp).length,
+      'Motion':   docs.filter(d=>d.motion).length,
+    };
+    sv('n4',Object.values(ac).reduce((a,b)=>a+b,0)+' total');
+    mk('c4','bar',{
+      labels:Object.keys(ac),
+      datasets:[{data:Object.values(ac),
+        backgroundColor:['rgba(255,45,107,.85)','rgba(255,183,0,.85)','rgba(0,212,255,.85)','rgba(0,255,136,.85)'],
+        borderRadius:8,borderSkipped:false}]
+    },{...base,indexAxis:'y',
+      scales:{
+        x:{ticks:{color:TICK},grid:{color:GRID}},
+        y:{ticks:{color:TICK,font:{size:12,family:"'Rajdhani',sans-serif"},padding:8},grid:{display:false}}
+      }
+    });
+
+    // Chart 5: Scatter temp vs humidity
+    const sp=docs.filter(d=>d.temperature&&d.humidity).map(d=>({x:+d.temperature.toFixed(1),y:+d.humidity.toFixed(1),a:d.gas_alert}));
+    sv('n5',sp.length+' points');
+    mk('c5','scatter',{
+      datasets:[
+        {label:'Normal',data:sp.filter(p=>!p.a).map(p=>({x:p.x,y:p.y})),
+         backgroundColor:'rgba(176,110,243,.55)',pointRadius:4,pointHoverRadius:7},
+        {label:'Gas Alert',data:sp.filter(p=>p.a).map(p=>({x:p.x,y:p.y})),
+         backgroundColor:'rgba(255,45,107,.85)',pointRadius:6,pointHoverRadius:9,pointStyle:'triangle'}
+      ]
+    },{...base,
+      plugins:{legend:{display:true,labels:{color:'#6080a0',font:{size:11,family:"'Rajdhani',sans-serif"},boxWidth:14,padding:20,usePointStyle:true}}},
+      scales:{
+        x:{title:{display:true,text:'Temperature (°C)',color:TICK,font:{size:12}},ticks:{color:TICK},grid:{color:GRID}},
+        y:{title:{display:true,text:'Humidity (%)',color:TICK,font:{size:12}},ticks:{color:TICK},grid:{color:GRID}}
+      }
+    });
+
+    show();
+    sv('ltxt',`LIVE · ${all.length} READINGS`);
+    sv('ft',new Date().toLocaleTimeString());
+
+  }catch(e){ console.error(e); }
+}
+
+function show(){
+  document.getElementById('loading').style.display='none';
+  document.getElementById('app').style.display='block';
+}
+
+startLive();
+</script>
+</body>
+</html>
